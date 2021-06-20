@@ -107,8 +107,7 @@ func Test_Trend_Validate(t *testing.T) {
 		Err   error
 	}{
 		"Invalid Trend": {
-			Trend: 70,
-			Err:   ErrInvalidTrend,
+			Err: ErrInvalidTrend,
 		},
 		"Successful TrendUp validation": {
 			Trend: TrendUp,
@@ -137,8 +136,7 @@ func Test_Trend_MarshalText(t *testing.T) {
 		Err   error
 	}{
 		"Invalid Trend": {
-			Trend: 70,
-			Err:   ErrInvalidTrend,
+			Err: ErrInvalidTrend,
 		},
 		"Successful TrendUp marshal": {
 			Trend: TrendUp,
@@ -174,8 +172,7 @@ func Test_Trend_UnmarshalText(t *testing.T) {
 		Err    error
 	}{
 		"Invalid Trend": {
-			Text: "70",
-			Err:  ErrInvalidTrend,
+			Err: ErrInvalidTrend,
 		},
 		"Successful TrendUp unmarshal (long form)": {
 			Text:   "up",
@@ -219,8 +216,7 @@ func Test_Band_Validate(t *testing.T) {
 		Err  error
 	}{
 		"Invalid Band": {
-			Band: 70,
-			Err:  ErrInvalidBand,
+			Err: ErrInvalidBand,
 		},
 		"Successful BandUpper validation": {
 			Band: BandUpper,
@@ -252,8 +248,7 @@ func Test_Band_MarshalText(t *testing.T) {
 		Err  error
 	}{
 		"Invalid Band": {
-			Band: 70,
-			Err:  ErrInvalidBand,
+			Err: ErrInvalidBand,
 		},
 		"Successful BandUpper marshal": {
 			Band: BandUpper,
@@ -293,8 +288,7 @@ func Test_Band_UnmarshalText(t *testing.T) {
 		Err    error
 	}{
 		"Invalid Band": {
-			Text: "70",
-			Err:  ErrInvalidBand,
+			Err: ErrInvalidBand,
 		},
 		"Successful BandUpper unmarshal (long form)": {
 			Text:   "upper",
@@ -336,6 +330,186 @@ func Test_Band_UnmarshalText(t *testing.T) {
 			}
 
 			assert.Equal(t, c.Result, b)
+		})
+	}
+}
+
+func Test_MAType_Initialize(t *testing.T) {
+	cc := map[string]struct {
+		Type      MAType
+		Length    int
+		Indicator Indicator
+		Err       error
+	}{
+		"Invalid MAType": {
+			Err: ErrInvalidMA,
+		},
+		"Successful MATypeDEMA initialization": {
+			Type:   MATypeDEMA,
+			Length: 1,
+			Indicator: DEMA{
+				valid: true,
+				ema: EMA{
+					valid: true,
+					sma: SMA{
+						valid:  true,
+						length: 1,
+					},
+				},
+			},
+		},
+		"Successful MATypeEMA initialization": {
+			Type:   MATypeEMA,
+			Length: 1,
+			Indicator: EMA{
+				valid: true,
+				sma: SMA{
+					valid:  true,
+					length: 1,
+				},
+			},
+		},
+		"Successful MATypeHMA initialization": {
+			Type:   MATypeHMA,
+			Length: 1,
+			Indicator: HMA{
+				valid: true,
+				wma: WMA{
+					valid:  true,
+					length: 1,
+				},
+			},
+		},
+		"Successful MATypeSMA initialization": {
+			Type:   MATypeSMA,
+			Length: 1,
+			Indicator: SMA{
+				valid:  true,
+				length: 1,
+			},
+		},
+		"Successful MATypeWMA initialization": {
+			Type:   MATypeWMA,
+			Length: 1,
+			Indicator: WMA{
+				valid:  true,
+				length: 1,
+			},
+		},
+	}
+
+	for cn, c := range cc {
+		c := c
+
+		t.Run(cn, func(t *testing.T) {
+			t.Parallel()
+
+			ma, err := c.Type.Initialize(c.Length)
+			assertEqualError(t, c.Err, err)
+			if err != nil {
+				return
+			}
+
+			assert.Equal(t, c.Indicator, ma)
+		})
+	}
+}
+
+func Test_MAType_MarshalText(t *testing.T) {
+	cc := map[string]struct {
+		Type MAType
+		Text string
+		Err  error
+	}{
+		"Invalid MAType": {
+			Type: 70,
+			Err:  ErrInvalidMA,
+		},
+		"Successful MATypeDEMA marshal": {
+			Type: MATypeDEMA,
+			Text: "dema",
+		},
+		"Successful MATypeEMA marshal": {
+			Type: MATypeEMA,
+			Text: "ema",
+		},
+		"Successful MATypeHMA marshal": {
+			Type: MATypeHMA,
+			Text: "hma",
+		},
+		"Successful MATypeSMA marshal": {
+			Type: MATypeSMA,
+			Text: "sma",
+		},
+		"Successful MATypeWMA marshal": {
+			Type: MATypeWMA,
+			Text: "wma",
+		},
+	}
+
+	for cn, c := range cc {
+		c := c
+
+		t.Run(cn, func(t *testing.T) {
+			t.Parallel()
+
+			res, err := c.Type.MarshalText()
+			assertEqualError(t, c.Err, err)
+			if err != nil {
+				return
+			}
+
+			assert.Equal(t, c.Text, string(res))
+		})
+	}
+}
+
+func Test_MAType_UnmarshalText(t *testing.T) {
+	cc := map[string]struct {
+		Text   string
+		Result MAType
+		Err    error
+	}{
+		"Invalid MAType": {
+			Text: "70",
+			Err:  ErrInvalidMA,
+		},
+		"Successful MATypeDEMA unmarshal": {
+			Text:   "dema",
+			Result: MATypeDEMA,
+		},
+		"Successful MATypeEMA unmarshal": {
+			Text:   "ema",
+			Result: MATypeEMA,
+		},
+		"Successful MATypeHMA unmarshal": {
+			Text:   "hma",
+			Result: MATypeHMA,
+		},
+		"Successful MATypeSMA unmarshal": {
+			Text:   "sma",
+			Result: MATypeSMA,
+		},
+		"Successful MATypeWMA unmarshal": {
+			Text:   "wma",
+			Result: MATypeWMA,
+		},
+	}
+
+	for cn, c := range cc {
+		c := c
+
+		t.Run(cn, func(t *testing.T) {
+			t.Parallel()
+
+			var mat MAType
+			err := mat.UnmarshalText([]byte(c.Text))
+			assertEqualError(t, c.Err, err)
+			if err != nil {
+				return
+			}
+
+			assert.Equal(t, c.Result, mat)
 		})
 	}
 }

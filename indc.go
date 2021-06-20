@@ -205,8 +205,8 @@ type CCI struct {
 	// valid specifies whether CCI paremeters were validated.
 	valid bool
 
-	// sma specifies SMA indicator configuration.
-	sma SMA
+	// ma specifies moving average indicator configuration.
+	ma Indicator
 
 	// factor is used to scale CCI to provide more readable numbers.
 	// default is 0.015f.
@@ -216,18 +216,18 @@ type CCI struct {
 // NewCCI validates provided configuration options and creates
 // new CCI indicator.
 // If provided factor is zero, default value is going to be used (0.015f).
-func NewCCI(length int, factor decimal.Decimal) (CCI, error) {
+func NewCCI(mat MAType, length int, factor decimal.Decimal) (CCI, error) {
 	if factor.Equal(decimal.Zero) {
 		factor = decimal.RequireFromString("0.015")
 	}
 
-	sma, err := NewSMA(length)
+	ma, err := mat.Initialize(length)
 	if err != nil {
 		return CCI{}, err
 	}
 
 	cci := CCI{
-		sma:    sma,
+		ma:     ma,
 		factor: factor,
 	}
 
@@ -262,7 +262,7 @@ func (cci CCI) Calc(dd []decimal.Decimal) (decimal.Decimal, error) {
 		return decimal.Zero, ErrInvalidDataSize
 	}
 
-	res, err := cci.sma.Calc(dd)
+	res, err := cci.ma.Calc(dd)
 	if err != nil {
 		return decimal.Zero, err
 	}
@@ -279,7 +279,7 @@ func (cci CCI) Calc(dd []decimal.Decimal) (decimal.Decimal, error) {
 // Count determines the total amount of data points needed for CCI
 // calculation.
 func (cci CCI) Count() int {
-	return cci.sma.Count()
+	return cci.ma.Count()
 }
 
 // DEMA holds all the necessary information needed to calculate

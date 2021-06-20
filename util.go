@@ -32,6 +32,10 @@ var (
 	// ErrInvalidBand is returned when band doesn't match any of the
 	// available bands.
 	ErrInvalidBand = errors.New("invalid band")
+
+	// ErrInvalidMA is returned when ma doesn't match any of the
+	// availabble ma types.
+	ErrInvalidMA = errors.New("invalid moving average")
 )
 
 // avg is a helper function that calculates average decimal number of
@@ -88,6 +92,9 @@ func sdev(dd []decimal.Decimal) decimal.Decimal {
 	return sqrt(res)
 }
 
+// Trend specifies which trend should be used.
+type Trend int
+
 const (
 	// TrendUp specifies increasing value trend.
 	TrendUp Trend = iota + 1
@@ -95,9 +102,6 @@ const (
 	// TrendDown specifies decreasing value value.
 	TrendDown
 )
-
-// Trend specifies which trend should be used.
-type Trend int
 
 // Validate checks whether the trend is one of
 // supported trend types or not.
@@ -141,6 +145,9 @@ func (t *Trend) UnmarshalText(d []byte) error {
 	return nil
 }
 
+// Band specifies which band should be used.
+type Band int
+
 // Available Bollinger Band indicator types.
 const (
 	BandUpper Band = iota + 1
@@ -148,11 +155,7 @@ const (
 	BandWidth
 )
 
-// Band specifies which band should be used.
-type Band int
-
-// Validate checks whether the band is one of
-// supported band types or not.
+// Validate checks whether band is one of supported band types.
 func (b Band) Validate() error {
 	switch b {
 	case BandUpper, BandLower, BandWidth:
@@ -162,8 +165,7 @@ func (b Band) Validate() error {
 	}
 }
 
-// MarshalText turns band into appropriate string
-// representation in JSON.
+// MarshalText turns band into appropriate string representation in JSON.
 func (b Band) MarshalText() ([]byte, error) {
 	var v string
 
@@ -195,4 +197,89 @@ func (b *Band) UnmarshalText(d []byte) error {
 	}
 
 	return nil
+}
+
+// MAType is a custom type that validates it to be only of existing
+// moving average types.
+type MAType int
+
+// Available moving average indicator types.
+const (
+	MATypeDEMA MAType = iota + 1
+	MATypeEMA
+	MATypeHMA
+	MATypeSMA
+	MATypeWMA
+)
+
+// Initialize tries to construct new moving average based on the provided
+// name.
+func (mat MAType) Initialize(length int) (Indicator, error) {
+	switch mat {
+	case MATypeDEMA:
+		return NewDEMA(length)
+	case MATypeEMA:
+		return NewEMA(length)
+	case MATypeHMA:
+		return NewHMA(length)
+	case MATypeSMA:
+		return NewSMA(length)
+	case MATypeWMA:
+		return NewWMA(length)
+	default:
+		return nil, ErrInvalidMA
+	}
+}
+
+// MarshalText turns MAType into appropriate string representation in JSON.
+func (mat MAType) MarshalText() ([]byte, error) {
+	var v string
+
+	switch mat {
+	case MATypeDEMA:
+		v = "dema"
+	case MATypeEMA:
+		v = "ema"
+	case MATypeHMA:
+		v = "hma"
+	case MATypeSMA:
+		v = "sma"
+	case MATypeWMA:
+		v = "wma"
+	default:
+		return nil, ErrInvalidMA
+	}
+
+	return []byte(v), nil
+}
+
+// UnmarshalText turns JSON string to appropriate moving average type value.
+func (mat *MAType) UnmarshalText(d []byte) error {
+	switch string(d) {
+	case "dema":
+		*mat = MATypeDEMA
+	case "ema":
+		*mat = MATypeEMA
+	case "hma":
+		*mat = MATypeHMA
+	case "sma":
+		*mat = MATypeSMA
+	case "wma":
+		*mat = MATypeWMA
+	default:
+		return ErrInvalidMA
+	}
+
+	return nil
+}
+
+// Indicator is an interface that every indicator should implement.
+type Indicator interface {
+	// Calc should return calculation results based on provided data
+	// points slice.
+	Calc([]decimal.Decimal) (decimal.Decimal, error)
+
+	// Count should determine the total amount data points required for
+	// the calculation.
+	Count() int
 }

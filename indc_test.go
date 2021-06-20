@@ -424,6 +424,7 @@ func Test_BB_Count(t *testing.T) {
 
 func Test_NewCCI(t *testing.T) {
 	cc := map[string]struct {
+		Type   MAType
 		Length int
 		Factor decimal.Decimal
 		Result CCI
@@ -432,17 +433,23 @@ func Test_NewCCI(t *testing.T) {
 		"NewSMA returns an error": {
 			Error: assert.AnError,
 		},
+		"Invalid provided moving average type": {
+			Length: 1,
+			Error:  errors.New("invalid moving average"),
+		},
 		"Invalid factor": {
+			Type:   MATypeSMA,
 			Length: 1,
 			Factor: decimal.RequireFromString("-1"),
 			Error:  errors.New("invalid factor"),
 		},
 		"Successfully created new CCI with default factor": {
+			Type:   MATypeSMA,
 			Length: 10,
 			Factor: decimal.Zero,
 			Result: CCI{
 				valid: true,
-				sma: SMA{
+				ma: SMA{
 					length: 10,
 					valid:  true,
 				},
@@ -450,11 +457,12 @@ func Test_NewCCI(t *testing.T) {
 			},
 		},
 		"Successfully created new CCI": {
+			Type:   MATypeSMA,
 			Length: 10,
 			Factor: _hundred,
 			Result: CCI{
 				valid: true,
-				sma: SMA{
+				ma: SMA{
 					length: 10,
 					valid:  true,
 				},
@@ -469,7 +477,7 @@ func Test_NewCCI(t *testing.T) {
 		t.Run(cn, func(t *testing.T) {
 			t.Parallel()
 
-			res, err := NewCCI(c.Length, c.Factor)
+			res, err := NewCCI(c.Type, c.Length, c.Factor)
 			assertEqualError(t, c.Error, err)
 			assert.Equal(t, c.Result, res)
 		})
@@ -484,7 +492,7 @@ func Test_CCI_validate(t *testing.T) {
 		"Invalid factor": {
 			CCI: CCI{
 				valid: false,
-				sma: SMA{
+				ma: SMA{
 					length: 1,
 				},
 				factor: decimal.NewFromInt(-1),
@@ -494,7 +502,7 @@ func Test_CCI_validate(t *testing.T) {
 		"Successfully validated": {
 			CCI: CCI{
 				valid: false,
-				sma: SMA{
+				ma: SMA{
 					length: 1,
 				},
 				factor: decimal.RequireFromString("1"),
@@ -530,7 +538,7 @@ func Test_CCI_Calc(t *testing.T) {
 		"Invalid data size": {
 			CCI: CCI{
 				valid: true,
-				sma: SMA{
+				ma: SMA{
 					length: 31,
 				},
 				factor: decimal.RequireFromString("0.015"),
@@ -543,6 +551,7 @@ func Test_CCI_Calc(t *testing.T) {
 		"Invalid SMA calc": {
 			CCI: CCI{
 				valid:  true,
+				ma:     SMA{},
 				factor: decimal.RequireFromString("0.015"),
 			},
 			Data: []decimal.Decimal{
@@ -553,7 +562,7 @@ func Test_CCI_Calc(t *testing.T) {
 		"Successful handled division by 0": {
 			CCI: CCI{
 				valid: true,
-				sma: SMA{
+				ma: SMA{
 					length: 1,
 					valid:  true,
 				},
@@ -567,7 +576,7 @@ func Test_CCI_Calc(t *testing.T) {
 		"Successful calculation": {
 			CCI: CCI{
 				valid: true,
-				sma: SMA{
+				ma: SMA{
 					length: 3,
 					valid:  true,
 				},
@@ -601,7 +610,7 @@ func Test_CCI_Calc(t *testing.T) {
 
 func Test_CCI_Count(t *testing.T) {
 	assert.Equal(t, 10, CCI{
-		sma: SMA{
+		ma: SMA{
 			length: 10,
 		},
 	}.Count())
